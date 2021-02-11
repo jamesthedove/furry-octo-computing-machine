@@ -1,0 +1,71 @@
+version: "3"
+services:
+  customer-service:
+    container_name: customer-service
+    restart: always
+    build: ./customer-service
+    depends_on:
+      - mongo
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URI=mongodb://mongo:27017/ecommerce
+      - DEBUG=*
+      - PORT=3000
+    volumes:
+      - ./customer-service:/usr/src/app
+  order-service:
+    container_name: order-service
+    restart: on-failure
+    build: ./order-service
+    depends_on:
+      - rabbitmq
+      - mongo
+    ports:
+      - "50051:50051"
+    environment:
+      - DATABASE_URI=mongodb://mongo:27017/ecommerce
+      - ORDERS_QUEUE_NAME=pending_orders
+      - DEBUG=*
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    volumes:
+      - ./order-service:/usr/src/app
+  payment-service:
+    container_name: payment-service
+    restart: on-failure
+    build: ./payment-service
+    depends_on:
+      - rabbitmq
+      - mongo
+    environment:
+      - DATABASE_URI=mongodb://mongo:27017/ecommerce
+      - ORDERS_QUEUE_NAME=pending_orders
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    volumes:
+      - ./payment-service:/usr/src/app
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: 'rabbitmq'
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:15672" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    ports:
+      - 5672:5672
+      - 15672:15672
+    volumes:
+      - ~/data/rabbitmq/data/:/var/lib/rabbitmq/
+      - ~/data/rabbitmq/log/:/var/log/rabbitmq
+  mongo-seed:
+    build: ./mongo-seed
+    restart: on-failure
+    depends_on:
+      - mongo
+  mongo:
+    container_name: mongo
+    image: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - ~/data/ecommerce-db:/data/db
