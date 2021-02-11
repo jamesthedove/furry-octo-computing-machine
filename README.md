@@ -39,3 +39,6 @@ The order is then processed in the background by the `payment-service` which mar
 
 ## Limitations
 There is currently no product service because there's no functionality that requires that at the moment.
+
+Each service contains a `lib` folder with similar codes that are used across all services, in an ideal situation, this will be isolated to a separate repository or npm package and be shared amongst the services.
+ 
